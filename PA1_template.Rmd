@@ -1,0 +1,126 @@
+---
+title: "Homework 1"
+author: "Tim Moriarty"
+date: "June 5, 2016"
+output: html_document
+---
+
+
+Let's load in the data
+
+```{r, echo=TRUE}
+activity <- read.csv(file="activity.csv",head=TRUE,sep=",")
+head(activity)
+```
+
+Let's figure out what the mean number of steps by day is.
+We'll use tapply for this.
+
+```{r, echo=TRUE}
+tapply(activity$steps, activity$date, sum, na.rm=TRUE)
+```
+
+Let's make a histogram of these steps
+```{r, echo=TRUE}
+histinfo <- hist(tapply(activity$steps, activity$date, sum, na.rm=TRUE), breaks=20)
+histinfo
+```
+
+Calculate the mean and median of the total steps per day
+
+```{r, echo=TRUE}
+mean(tapply(activity$steps, activity$date, sum, na.rm=TRUE))
+median(tapply(activity$steps, activity$date, sum, na.rm=TRUE))
+```
+
+
+Let's calcualte a time series
+Its the time interval of the day on the x-axis (think of this like military time)
+and
+on the y-axis you have the number of steps
+
+```{r, echo=TRUE}
+the_timeseries <- ts(tapply(activity$steps, activity$interval, mean, na.rm=TRUE))
+plot(unique(activity$interval), tapply(activity$steps, activity$interval, mean, na.rm=TRUE),  type="l")
+```
+
+Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
+```{r, echo=TRUE}
+
+table_of_averages <- aggregate(activity$steps, list(activity$interval), mean, na.rm=TRUE)
+subset(table_of_averages, table_of_averages$x == max(table_of_averages$x))
+```
+
+Looks like the 835 time is the best
+
+
+
+Imputing missing values
+
+Note that there are a number of days/intervals where there are missing values (coded as NA). The presence of missing days may introduce bias into some calculations or summaries of the data.
+
+Calculate and report the total number of missing values in the dataset (i.e. the total number of rows with NAs)
+
+```{r, echo=TRUE}
+new_activity_DF<-activity[rowSums(is.na(activity)) > 0,]
+nrow(new_activity_DF)
+```
+
+Devise a strategy for filling in all of the missing values in the dataset. The strategy does not need to be sophisticated. For example, you could use the mean/median for that day, or the mean for that 5-minute interval, etc.
+
+I'm going to replace the NAs with the median for the time frame.
+
+Create a new dataset that is equal to the original dataset but with the missing data filled in.
+
+
+```{r, echo=TRUE}
+
+activity$steps <- ifelse(is.na(activity$steps) == TRUE, table_of_averages$x[table_of_averages$Group.1 %in% activity$interval], activity$steps)
+
+```
+
+Make a histogram of the total number of steps taken each day and Calculate and report the mean and median total number of steps taken per day. Do these values differ from the estimates from the first part of the assignment? What is the impact of imputing missing data on the estimates of the total daily number of steps?
+
+```{r, echo=TRUE}
+histinfo_clean <- hist(tapply(activity$steps, activity$date, sum, na.rm=TRUE), breaks=20)
+histinfo_clean
+
+mean(tapply(activity$steps, activity$date, sum, na.rm=TRUE))
+median(tapply(activity$steps, activity$date, sum, na.rm=TRUE))
+
+```
+
+With the removal of the NAs, there are far fewer 0s.  This raises the mean and median from their previous values.
+
+
+Create a new factor variable in the dataset with two levels - "weekday" and "weekend" indicating whether a given date is a weekday or weekend day.
+
+```{r, echo=TRUE}
+activity$newdate <- as.Date(activity$date)
+#create a vector of weekdays
+weekdays1 <- c('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday')
+#Use `%in%` and `weekdays` to create a logical vector
+#convert to `factor` and specify the `levels/labels`
+activity$wDay <- factor((weekdays(activity$newdate) %in% weekdays1), 
+         levels=c(FALSE, TRUE), labels=c('weekend', 'weekday'))
+
+
+```
+
+Make a panel plot containing a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis). See the README file in the GitHub repository to see an example of what this plot should look like using simulated data.
+
+```{r, echo=TRUE}
+par(mfrow=c(2,1))
+
+
+weekdays <- subset(activity, activity$wDay=="weekday")
+weekend <- subset(activity, activity$wDay=="weekend")
+plot(unique(weekdays$interval), tapply(weekdays$steps, weekdays$interval, mean, na.rm=TRUE),  type="l", xlab="time", ylab="steps", main="Weekdays Average Steps by Time")
+plot(unique(weekend$interval), tapply(weekend$steps, weekend$interval, mean, na.rm=TRUE),  type="l", xlab="time", ylab="steps", main="Weekends Average Steps by Time")
+
+par(mfrow=c(1,1))
+
+```
+
+
+
