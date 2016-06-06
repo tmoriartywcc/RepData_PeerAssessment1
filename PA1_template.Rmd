@@ -2,7 +2,7 @@
 title: "Homework 1"
 author: "Tim Moriarty"
 date: "June 5, 2016"
-output: html_document
+output: md_document
 ---
 
 
